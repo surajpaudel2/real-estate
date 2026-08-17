@@ -18,4 +18,12 @@ public class TestController {
         return "This is a test2 message from the test controllers";
     }
 
+    @GetMapping("/name")
+    public String name() {
+        return "" +
+                "{" +
+                "Suraj Paudel" +
+                "}";
+    }
+
 }
