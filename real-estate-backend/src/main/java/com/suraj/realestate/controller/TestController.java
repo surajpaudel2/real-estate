@@ -15,7 +15,7 @@ public class TestController {
 
     @GetMapping("/test2")
     public String test2(){
-        return "This is a test2 message from the test controller";
+        return "This is a test2 message from the test controllers";
     }
 
 }
