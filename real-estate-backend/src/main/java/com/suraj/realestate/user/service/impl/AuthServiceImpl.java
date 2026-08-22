@@ -11,8 +11,7 @@ import com.suraj.realestate.user.dto.response.AuthResponse;
 import com.suraj.realestate.user.dto.response.RegisterResponse;
 import com.suraj.realestate.user.entity.Otp;
 import com.suraj.realestate.user.entity.User;
-import com.suraj.realestate.user.exception.EmailAlreadyExistsException;
-import com.suraj.realestate.user.exception.InvalidOtpException;
+import com.suraj.realestate.user.mapper.AuthResponseMapToMapper;
 import com.suraj.realestate.user.mapper.OtpMapToMapper;
 import com.suraj.realestate.user.mapper.RegisterResponseMapToMapper;
 import com.suraj.realestate.user.mapper.UserMapToMapper;
@@ -21,13 +20,13 @@ import com.suraj.realestate.user.repository.UserRepository;
 import com.suraj.realestate.user.service.AuthService;
 import com.suraj.realestate.user.validation.RegisterRequestValidator;
 import com.suraj.realestate.user.validation.UserValidator;
+import com.suraj.realestate.user.validation.VerifyOtpRequestValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
@@ -44,8 +43,10 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapToMapper usermaptomapper;
     private final OtpMapToMapper otpmaptomapper;
     private final RegisterResponseMapToMapper registerresponsemaptomapper;
+    private final AuthResponseMapToMapper authResponseMapToMapper;
     private final UserValidator userValidator;
     private final RegisterRequestValidator registerRequestValidator;
+    private final VerifyOtpRequestValidator verifyOtpRequestValidator;
 
     @Override
     @Transactional
@@ -71,12 +72,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void verifyOtp(VerifyOtpRequest request) {
-        Otp otpEntity = otpRepository.findByUserIdAndOtp(request.getUserId(), request.getOtp())
-                .orElseThrow(() -> new InvalidOtpException("Invalid or expired OTP."));
-
-        if (otpEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidOtpException("Invalid or expired OTP.");
-        }
+        Otp otpEntity = verifyOtpRequestValidator.validate(request);
 
         User user = otpEntity.getUser();
         user.setEmailVerified(true);
@@ -105,13 +101,7 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtService.generateToken(principal);
 
-        return AuthResponse.builder()
-                .token(token)
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .roles(user.getRoles())
-                .build();
+        return authResponseMapToMapper.mapFromUserAndToken(user, token);
     }
 
 
