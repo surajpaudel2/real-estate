@@ -5,8 +5,8 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,11 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A marketplace participant. A user is not locked into a single role — one
- * account can hold both {@link Role#BUYER} and {@link Role#SELLER} at once,
- * so roles are modeled as a set rather than a single field. Role-specific
- * data, if ever needed, belongs on a separate linked entity rather than on
- * this class.
+ * Registered user of the platform. Can hold multiple roles (BUYER, SELLER).
  */
 @Entity
 @Table(name = "users")
@@ -48,10 +44,26 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
+    private String passwordHash;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    /**
+     * Login gate. Set true at the same point as emailVerified for now,
+     * kept as a separate field since it's conceptually distinct (e.g.
+     * an admin could later deactivate an already-verified account).
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean active = false;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 }
