@@ -1,13 +1,17 @@
 services:
-  app:
-    image: real-estate-backend:latest
-    container_name: real-estate-backend
-    ports:
-      - "8080:8080"
+  mysql:
+    image: mysql:8.4
+    container_name: real-estate-mysql
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=real_estate
+    volumes:
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/test"]
-      interval: 15s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
       timeout: 5s
       retries: 5
+
+volumes:
+  mysql-data:
