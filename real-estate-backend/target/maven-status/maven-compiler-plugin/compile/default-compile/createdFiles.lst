@@ -4,6 +4,7 @@ com/suraj/realestate/notification/service/NotificationSender.class
 com/suraj/realestate/listing/entity/Photo$PhotoBuilder.class
 com/suraj/realestate/listing/enums/PropertyType.class
 com/suraj/realestate/common/security/JwtService.class
+com/suraj/realestate/listing/dto/response/UpdateListingResponse.class
 com/suraj/realestate/listing/entity/SpecificAvailabilityWindow$SpecificAvailabilityWindowBuilderImpl.class
 com/suraj/realestate/user/exception/EmailAlreadyExistsException.class
 com/suraj/realestate/listing/dto/response/CreateListingResponse.class
@@ -37,14 +38,17 @@ com/suraj/realestate/listing/service/ListingService.class
 com/suraj/realestate/payment/entity/Payment.class
 com/suraj/realestate/listing/controller/ListingController.class
 com/suraj/realestate/user/validation/RegisterRequestValidator.class
+com/suraj/realestate/listing/dto/request/UpdateListingRequest.class
 com/suraj/realestate/user/service/impl/AuthServiceImpl.class
 com/suraj/realestate/listing/mapper/CreateListingResponseMapToMapper.class
 com/suraj/realestate/listing/dto/request/SpecificAvailabilityWindowRequest.class
 com/suraj/realestate/common/security/UserPrincipal.class
+com/suraj/realestate/listing/dto/response/UpdateListingResponse$UpdateListingResponseBuilder.class
 com/suraj/realestate/common/openapi/StandardApiResponses.class
 com/suraj/realestate/user/entity/User.class
 com/suraj/realestate/common/config/AsyncConfig.class
 com/suraj/realestate/listing/dto/request/RecurringAvailabilityWindowRequest.class
+com/suraj/realestate/listing/mapper/UpdateListingResponseMapToMapper.class
 com/suraj/realestate/listing/validator/AvailabilityWindowValidator.class
 com/suraj/realestate/user/mapper/UserMapToMapper.class
 com/suraj/realestate/listing/entity/RecurringAvailabilityWindow.class
@@ -53,6 +57,7 @@ com/suraj/realestate/user/service/impl/UserDetailsServiceImpl.class
 com/suraj/realestate/common/response/ApiResponse$ApiResponseBuilder.class
 com/suraj/realestate/payment/entity/Payment$PaymentBuilder.class
 com/suraj/realestate/listing/entity/SpecificAvailabilityWindow.class
+com/suraj/realestate/listing/validator/ListingOwnershipValidator.class
 com/suraj/realestate/user/entity/Otp.class
 com/suraj/realestate/listing/entity/RecurringAvailabilityWindow$RecurringAvailabilityWindowBuilder.class
 com/suraj/realestate/user/repository/UserRepository.class

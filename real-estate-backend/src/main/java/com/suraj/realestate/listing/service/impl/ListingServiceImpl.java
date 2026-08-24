@@ -2,13 +2,17 @@ package com.suraj.realestate.listing.service.impl;
 
 import com.suraj.realestate.common.exception.ResourceNotFoundException;
 import com.suraj.realestate.listing.dto.request.CreateListingRequest;
+import com.suraj.realestate.listing.dto.request.UpdateListingRequest;
 import com.suraj.realestate.listing.dto.response.CreateListingResponse;
+import com.suraj.realestate.listing.dto.response.UpdateListingResponse;
 import com.suraj.realestate.listing.entity.Listing;
 import com.suraj.realestate.listing.mapper.CreateListingResponseMapToMapper;
 import com.suraj.realestate.listing.mapper.ListingMapToMapper;
+import com.suraj.realestate.listing.mapper.UpdateListingResponseMapToMapper;
 import com.suraj.realestate.listing.repository.ListingRepository;
 import com.suraj.realestate.listing.service.ListingService;
 import com.suraj.realestate.listing.validator.AvailabilityWindowValidator;
+import com.suraj.realestate.listing.validator.ListingOwnershipValidator;
 import com.suraj.realestate.user.entity.User;
 import com.suraj.realestate.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +26,10 @@ public class ListingServiceImpl implements ListingService {
     private final ListingRepository listingRepository;
     private final UserRepository userRepository;
     private final AvailabilityWindowValidator availabilityWindowValidator;
+    private final ListingOwnershipValidator listingOwnershipValidator;
     private final ListingMapToMapper listingMapToMapper;
     private final CreateListingResponseMapToMapper createListingResponseMapToMapper;
+    private final UpdateListingResponseMapToMapper updateListingResponseMapToMapper;
 
     @Override
     @Transactional
@@ -37,5 +43,20 @@ public class ListingServiceImpl implements ListingService {
         listing = listingRepository.save(listing);
 
         return createListingResponseMapToMapper.mapFromListing(listing);
+    }
+
+    @Override
+    @Transactional
+    public UpdateListingResponse updateListing(Long sellerId, Long listingId, UpdateListingRequest request) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Listing not found."));
+
+        listingOwnershipValidator.validate(listing, sellerId);
+        availabilityWindowValidator.validate(request.getAvailabilityWindows());
+
+        listingMapToMapper.updateFromRequest(listing, request);
+        listing = listingRepository.save(listing);
+
+        return updateListingResponseMapToMapper.mapFromListing(listing);
     }
 }
