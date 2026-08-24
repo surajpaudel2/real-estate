@@ -1,3 +1,5 @@
 aws
 .env
 .env.docker
+.env.dev
+.env.prod

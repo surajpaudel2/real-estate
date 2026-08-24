@@ -2,14 +2,28 @@ services:
   mysql:
     image: mysql:8.4
     container_name: real-estate-mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    env_file:
+      - .env.docker
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\""]
       interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: real-estate-backend:latest
+    container_name: real-estate-backend
+    init: true
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
       timeout: 5s
       retries: 5
 

@@ -1,10 +1,12 @@
 package com.suraj.realestate.common.exception;
 
 import com.suraj.realestate.common.response.ApiResponse;
+import com.suraj.realestate.listing.exception.InvalidAvailabilityWindowException;
 import com.suraj.realestate.user.exception.EmailAlreadyExistsException;
 import com.suraj.realestate.user.exception.InvalidOtpException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
@@ -53,6 +55,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedActionException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedActionException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("You do not have permission to perform this action."));
+    }
+
+    @ExceptionHandler(InvalidAvailabilityWindowException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidAvailabilityWindow(InvalidAvailabilityWindowException ex) {
+        return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
