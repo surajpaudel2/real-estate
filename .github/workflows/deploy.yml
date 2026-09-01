@@ -83,6 +83,12 @@ jobs:
             # (gitignored there, so it's generated here instead).
             printf 'SPRING_PROFILES_ACTIVE=prod\nMAIL_USERNAME=%s\n' "${{ secrets.PROD_MAIL_USERNAME }}" > .env.prod
 
+            # .env.docker (mysql service's MYSQL_DATABASE) is also gitignored
+            # and not shipped — derived from .env.common's DB_NAME (just
+            # shipped via scp) instead of a second hardcoded copy of the
+            # same value, so the two can't drift apart.
+            grep '^DB_NAME=' .env.common | sed 's/^DB_NAME=/MYSQL_DATABASE=/' > .env.docker
+
             export APP_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ inputs.image_tag }}"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
