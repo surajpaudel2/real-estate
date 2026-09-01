@@ -92,11 +92,19 @@ jobs:
             export APP_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ inputs.image_tag }}"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 
-            # One-time guard: an older deploy method (a bare `docker run
-            # --name real-estate-backend`) can leave a same-named container
-            # that isn't tracked by this compose project, which blocks `up`
-            # with a naming conflict. Harmless no-op once compose owns it.
+            # Guard against container/network drift across redeploys: (1)
+            # an older deploy method (bare `docker run --name
+            # real-estate-backend`) can leave an unmanaged container with
+            # that name, blocking `up` with a naming conflict; (2) if a
+            # prior run's containers survive while its network gets
+            # recreated, a leftover container can end up on a different
+            # network than this run's containers, breaking the `mysql`
+            # DNS alias the app relies on. `down` drops this project's
+            # containers and network cleanly every time — no -v flag, so
+            # the named mysql-data volume (and the database in it)
+            # survives the redeploy.
             docker rm -f real-estate-backend 2>/dev/null || true
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml down --remove-orphans
 
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             docker image prune -f
