@@ -57,8 +57,6 @@ jobs:
     defaults:
       run:
         working-directory: real-estate-backend
-    outputs:
-      image: ${{ steps.image.outputs.ref }}
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-backend
@@ -68,9 +66,6 @@ jobs:
             -Dimage=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ github.sha }} \
             -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
             -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Record pushed image ref
-        id: image
-        run: echo "ref=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
   # Reusable deploy job (.github/workflows/deploy.yml) — ships the compose
   # files + secret-backed env to EC2 and runs `docker compose up`, replacing
@@ -79,5 +74,5 @@ jobs:
     needs: build-and-push
     uses: ./.github/workflows/deploy.yml
     with:
-      image: ${{ needs.build-and-push.outputs.image }}
+      image_tag: ${{ github.sha }}
     secrets: inherit

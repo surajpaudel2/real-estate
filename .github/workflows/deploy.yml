@@ -7,8 +7,13 @@ name: Deploy via SSH (reusable)
 on:
   workflow_call:
     inputs:
-      image:
-        description: Full image ref to run on the remote host (e.g. docker.io/user/app:sha) — becomes $APP_IMAGE for docker-compose.yml's image interpolation.
+      image_tag:
+        description: >
+          Tag to deploy (the commit SHA build-and-push pushed). Combined
+          here with the DOCKERHUB_USERNAME secret and the fixed repo name
+          to build $APP_IMAGE — kept as just the tag (not the full ref) so
+          the secret never has to cross the job boundary as a job output,
+          which GitHub Actions silently empties.
         required: true
         type: string
       compose_files:
@@ -76,9 +81,9 @@ jobs:
 
             # Non-secret prod env — mirrors .env.prod's shape from the repo
             # (gitignored there, so it's generated here instead).
-            printf 'SPRING_PROFILES_ACTIVE=prod\nMAIL_USERNAME=%s\n' "${{ vars.PROD_MAIL_USERNAME }}" > .env.prod
+            printf 'SPRING_PROFILES_ACTIVE=prod\nMAIL_USERNAME=%s\n' "${{ secrets.PROD_MAIL_USERNAME }}" > .env.prod
 
-            export APP_IMAGE="${{ inputs.image }}"
+            export APP_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ inputs.image_tag }}"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             docker image prune -f
