@@ -91,6 +91,13 @@ jobs:
 
             export APP_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ inputs.image_tag }}"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+
+            # One-time guard: an older deploy method (a bare `docker run
+            # --name real-estate-backend`) can leave a same-named container
+            # that isn't tracked by this compose project, which blocks `up`
+            # with a naming conflict. Harmless no-op once compose owns it.
+            docker rm -f real-estate-backend 2>/dev/null || true
+
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             docker image prune -f
 
