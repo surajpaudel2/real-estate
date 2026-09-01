@@ -2,6 +2,7 @@ package com.suraj.realestate.common.exception;
 
 import com.suraj.realestate.common.response.ApiResponse;
 import com.suraj.realestate.listing.exception.InvalidAvailabilityWindowException;
+import com.suraj.realestate.listing.exception.ListingNotActiveException;
 import com.suraj.realestate.user.exception.EmailAlreadyExistsException;
 import com.suraj.realestate.user.exception.InvalidOtpException;
 import org.springframework.http.HttpStatus;
@@ -66,6 +67,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidAvailabilityWindowException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidAvailabilityWindow(InvalidAvailabilityWindowException ex) {
         return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ListingNotActiveException.class)
+    public ResponseEntity<ApiResponse<Void>> handleListingNotActive(ListingNotActiveException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

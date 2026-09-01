@@ -6,8 +6,9 @@ at the start of every session to know where things stand.
 | Area | Status |
 |---|---|
 | Domain model & entities | Done — entity classes generated |
-| Listing CRUD (create/edit/deactivate) | Create + edit done — deactivate not started |
-| Photo add/delete | Not started |
+| Listing CRUD (create/edit/activate/deactivate) | Done |
+| Listing view (single + paginated browse) | Done |
+| Photo add/delete | Wired end to end, but blocked on real S3 — see below |
 | Booking request/approve/reject/cancel/complete | Not started |
 | Payment (Stripe Checkout + webhook) | Not started |
 
@@ -41,8 +42,49 @@ collection is cleared and refilled (not replaced by reference) so
 Hibernate's `orphanRemoval` on `Listing.availabilityWindows` actually
 deletes the dropped rows instead of leaving them orphaned outside the
 tracked collection. Response mapping follows the same one-mapper-per-
-response-type split as create (`UpdateListingResponseMapToMapper`). Next
-up: deactivate listing.
+response-type split as create (`UpdateListingResponseMapToMapper`).
+
+Activate/deactivate listing: `PATCH /api/listings/{listingId}/activate`
+and `.../deactivate`, SELLER + `ListingOwnershipValidator`-gated, sharing
+one `ListingStatusResponse`/`ListingStatusResponseMapToMapper` pair.
+Idempotent — no error re-activating an already-active listing (no state
+machine here, unlike bookings).
+
+View listing: `GET /api/listings/{listingId}` (single, public, any
+status — a direct link/owner preview still works) and
+`GET /api/listings?page=&size=` (paginated, public, `ACTIVE` only via
+`ListingRepository.findByStatus`). `ListingResponse` composes
+`PhotoResponse` and a new polymorphic `AvailabilityWindowResponse`
+hierarchy (`RecurringAvailabilityWindowResponse`/
+`SpecificAvailabilityWindowResponse`) that mirrors the request-side
+shape; `AvailabilityWindowResponseMapToMapper` mirrors
+`AvailabilityWindowMapToMapper` in the entity→DTO direction. Pagination
+uses Spring Data's `Page<T>` directly inside `ApiResponse<T>` — no custom
+pagination wrapper. `SecurityConfig` was tightened: `/api/listings` and
+`/api/listings/*` are `permitAll()` for **GET only** now (previously the
+whole exact `/api/listings` path was unconditionally `permitAll()`, which
+under-protected `POST` at the filter-chain level even though
+`@PreAuthorize` still caught it).
+
+Photo add/delete: `POST /api/listings/{listingId}/photos` (multipart,
+multiple files) and `DELETE /api/listings/{listingId}/photos/{photoId}`,
+both SELLER + ownership + a new `ListingActiveValidator`-gated (listing
+must be ACTIVE; violation → new `ListingNotActiveException`, 409). Photo
+storage is behind a new extension-point interface,
+`common/storage/service/StorageService`
+(`uploadAll(List<MultipartFile>)`, `delete(String url)`), so
+`PhotoServiceImpl` never depends on a concrete provider. The only
+implementation, `S3StorageService`, is a stub — both methods currently
+throw `UnsupportedOperationException`; real AWS SDK calls are still
+outstanding, so the add-photos endpoint will 500 until that lands. No
+`PhotoRepository` was added despite `package-structure.md` reserving the
+filename — add/delete mutate the already-cascading
+`Listing.photos` collection (`cascade=ALL, orphanRemoval=true`) instead,
+same pattern as `availabilityWindows`; a standalone repository had no
+query to justify it yet.
+
+Next up: real S3 wiring for `S3StorageService`, then booking
+request/approve/reject/cancel/complete.
 
 ## Log
 - Requirements, feature-by-feature business rules, and booking state

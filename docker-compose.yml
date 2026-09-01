@@ -4,20 +4,39 @@ services:
     container_name: real-estate-mysql
     env_file:
       - .env.docker
+    environment:
+      # Official mysql image's own file-based secret convention — reads
+      # the password from a file instead of taking it as a plain env var.
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets:
+      - source: db_password
+        target: mysql_root_password
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\""]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$(cat /run/secrets/mysql_root_password)\""]
       interval: 10s
       timeout: 5s
       retries: 5
 
   app:
-    image: real-estate-backend:latest
+    # Local Jib builds always produce real-estate-backend:latest, so that's
+    # the default. CI/CD deploy overrides via $APP_IMAGE to pin the exact
+    # per-commit image it just pushed (see .github/workflows/deploy.yml).
+    image: ${APP_IMAGE:-real-estate-backend:latest}
     container_name: real-estate-backend
     init: true
     ports:
       - "8080:8080"
+    secrets:
+      - source: db_username
+        target: spring.datasource.username
+      - source: db_password
+        target: spring.datasource.password
+      - source: mail_password
+        target: spring.mail.password
+      - source: jwt_secret
+        target: jwt.secret
     depends_on:
       mysql:
         condition: service_healthy
@@ -29,3 +48,8 @@ services:
 
 volumes:
   mysql-data:
+
+# secrets are file-backed only (no Swarm/`external: true`) — the actual
+# source paths are per-environment and declared in docker-compose.dev.yml /
+# docker-compose.prod.yml, so this base file always needs one of those two
+# as an override (same as it already needs one for env vars).

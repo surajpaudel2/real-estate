@@ -5,15 +5,27 @@ services:
 
   app:
     env_file:
+      - .env.common
       - .env.dev
     # Bind mount (not a named volume) so classes/resources compiled locally
     # via `mvnw compile` are picked up by spring-boot-devtools' restart
     # inside the container without rebuilding the Jib image. Both targets
     # point at the same host directory: Jib splits its build output into
     # /app/classes (.class files) and /app/resources (everything else,
-
     # e.g. application-dev.yml, templates) even though Maven puts both in
     # the same target/classes directory on the host.
     volumes:
       - ./real-estate-backend/target/classes:/app/classes
       - ./real-estate-backend/target/classes:/app/resources
+
+# Secret source files for this environment — mounted at /run/secrets/ per
+# the target names declared on the services in docker-compose.yml.
+secrets:
+  db_username:
+    file: ./secrets/dev/spring.datasource.username
+  db_password:
+    file: ./secrets/dev/spring.datasource.password
+  mail_password:
+    file: ./secrets/dev/spring.mail.password
+  jwt_secret:
+    file: ./secrets/dev/jwt.secret

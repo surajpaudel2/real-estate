@@ -1,0 +1,20 @@
+name: Setup backend build environment
+description: >
+  Checkout + JDK 26 + Maven cache — the steps shared by every job that
+  needs to build real-estate-backend (test, build-and-push). Kept as a
+  composite action so a future job (or another workflow) can reuse it
+  without duplicating the setup steps.
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up JDK 26
+      uses: actions/setup-java@v5
+      with:
+        java-version: '26'
+        distribution: 'temurin'
+        cache: 'maven'
+        cache-dependency-path: real-estate-backend/pom.xml

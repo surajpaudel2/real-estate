@@ -3,3 +3,14 @@ aws
 .env.docker
 .env.dev
 .env.prod
+
+# Real secret values (Docker secrets source files) — only *.example
+# placeholders under secrets/ are committed, see Step 1 of the deploy plan.
+# (Directories must be un-ignored explicitly too, or git never descends
+# into secrets/ to apply the *.example negation below.)
+secrets/**
+!secrets/**/
+!secrets/**/*.example
+
+# Maven build output — regenerated on every build, shouldn't be versioned.
+target/

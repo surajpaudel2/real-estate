@@ -3,12 +3,27 @@ spring:
     name: real-estate-backend
   profiles:
     active: dev
+  config:
+    # One file per property under /run/secrets/, filename = property path
+    # (e.g. jwt.secret) — see secrets/*.example. No-op when running outside
+    # Docker, where /run/secrets doesn't exist.
+    import: optional:configtree:/run/secrets/
   jpa:
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 management:
   endpoints:
@@ -18,3 +33,11 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      # Mail delivery is best-effort, not a liveness signal — a transient
+      # SMTP blip shouldn't flip the whole app's health status to DOWN.
+      enabled: false
+
+jwt:
+  expiration-ms: 86400000

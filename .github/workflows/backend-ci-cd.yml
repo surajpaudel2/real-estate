@@ -5,6 +5,8 @@ on:
     paths:
       - 'real-estate-backend/**'
       - '.github/workflows/backend-ci-cd.yml'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/setup-backend/**'
   pull_request:
     branches: [main]
     paths:
@@ -16,17 +18,10 @@ jobs:
       run:
         working-directory: real-estate-backend
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      - name: Set up JDK 26
-        uses: actions/setup-java@v5
-        with:
-          java-version: '26'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: real-estate-backend/pom.xml
+      - uses: ./.github/actions/setup-backend
       - name: Run tests
         run: ./mvnw -B test
+
   build-and-push:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -34,54 +29,26 @@ jobs:
     defaults:
       run:
         working-directory: real-estate-backend
+    outputs:
+      image: ${{ steps.image.outputs.ref }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      - name: Set up JDK 26
-        uses: actions/setup-java@v5
-        with:
-          java-version: '26'
-          distribution: 'temurin'
-          cache: 'maven'
-          cache-dependency-path: real-estate-backend/pom.xml
+      - uses: ./.github/actions/setup-backend
       - name: Build and push image with Jib
         run: |
           ./mvnw -B compile jib:build \
             -Dimage=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ github.sha }} \
             -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
             -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Record pushed image ref
+        id: image
+        run: echo "ref=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+  # Reusable deploy job (.github/workflows/deploy.yml) — ships the compose
+  # files + secret-backed env to EC2 and runs `docker compose up`, replacing
+  # the old bare `docker run` that had no DB/mail/JWT config wired in at all.
   deploy:
     needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-2
-      - name: Allow runner IP for SSH
-        run: |
-          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
-          aws ec2 authorize-security-group-ingress \
-            --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} \
-            --protocol tcp --port 22 --cidr ${RUNNER_IP}/32
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ github.sha }}
-            docker stop real-estate-backend || true
-            docker rm real-estate-backend || true
-            docker run -d -p 8080:8080 --name real-estate-backend ${{ secrets.DOCKERHUB_USERNAME }}/real-estate-backend:${{ github.sha }}
-            docker image prune -f
-      - name: Revoke runner IP
-        if: always()
-        run: |
-          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
-          aws ec2 revoke-security-group-ingress \
-            --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} \
-            --protocol tcp --port 22 --cidr ${RUNNER_IP}/32
+    uses: ./.github/workflows/deploy.yml
+    with:
+      image: ${{ needs.build-and-push.outputs.image }}
+    secrets: inherit

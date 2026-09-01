@@ -1,4 +1,17 @@
 services:
   app:
     env_file:
+      - .env.common
       - .env.prod
+
+# Secret source files for this environment — mounted at /run/secrets/ per
+# the target names declared on the services in docker-compose.yml.
+secrets:
+  db_username:
+    file: ./secrets/prod/spring.datasource.username
+  db_password:
+    file: ./secrets/prod/spring.datasource.password
+  mail_password:
+    file: ./secrets/prod/spring.mail.password
+  jwt_secret:
+    file: ./secrets/prod/jwt.secret
