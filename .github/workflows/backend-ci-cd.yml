@@ -17,6 +17,33 @@ jobs:
     defaults:
       run:
         working-directory: real-estate-backend
+    services:
+      # contextLoads() boots the full Spring context, which needs a real
+      # datasource — the dev profile's DB_HOST defaults to localhost:3306,
+      # so a service container standing in for that is enough (no compose,
+      # no /run/secrets involved here).
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: real_estate
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      # Stand-in values for properties that have no default outside
+      # Docker/.env (spring.datasource.*, MAIL_USERNAME, spring.mail.password,
+      # jwt.secret) — real ones only ever live in secrets/ or CI secrets,
+      # never needed for a context-load smoke test.
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: test
+      MAIL_USERNAME: ci@example.com
+      SPRING_MAIL_PASSWORD: test
+      JWT_SECRET: ci-only-test-secret-at-least-32-characters-long
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-backend
